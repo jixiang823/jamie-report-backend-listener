@@ -18,6 +18,8 @@ import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.visualizers.backend.AbstractBackendListenerClient;
 import org.apache.jmeter.visualizers.backend.BackendListenerContext;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,7 +71,7 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
     public void teardownTest(BackendListenerContext context) {
 
         dashboard.setProjectEndTime(System.currentTimeMillis()); // 项目结束执行时间
-        dashboard.setProjectDuration((dashboard.getProjectEndTime() - dashboard.getProjectStartTime()) / 1000); // 项目执行持续时间
+        dashboard.setProjectDuration(dashboard.getProjectEndTime() - dashboard.getProjectStartTime()); // 项目执行持续时间(毫秒)
         jMeterReportModel.setDashboard(dashboard); // 设置看板数据
         jMeterReportModel.setTestCaseModels(testCaseModels); // 设置用例相关数据
 
@@ -100,8 +102,10 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
         dashboard.setCasePassNum(count); // 执行成功的用例总数
         dashboard.setCaseFailNum(testCaseModels.size() - count); // 执行失败的用例总数
         dashboard.setNewlyFailNum(testCaseModels.size() - count); // 新增失败的用例总数
-        dashboard.setCassPassRate((double) dashboard.getCasePassNum() / dashboard.getCaseNum()); // 用例执行成功率
-
+        dashboard.setKeepFailingNum(0); // 设置持续失败默认值(在jmeter-report-backend服务里做计算)
+        dashboard.setCasePassRate(BigDecimal
+                .valueOf((double) dashboard.getCasePassNum() / dashboard.getCaseNum())
+                .setScale(2, RoundingMode.HALF_UP)); // 用例执行成功率
     }
 
     // 得到testCaseModel的数据
@@ -172,21 +176,5 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
         testCaseModels.add(testCaseModel);
 
     }
-
-    // 调用数据收集服务,储存数据到数据库
-//    private void send(JMeterReportModel jMeterReportModel) {
-//
-//        HttpResponse<JsonNode> response;
-//        try {
-//            response = Unirest.post(hostName.concat("/jmeter-results/save"))
-//                    .header("Content-Type", "application/json")
-//                    .body(GsonUtil.objToJson(jMeterReportModel))
-//                    .asJson();
-//            log.info("数据发送成功：{}", response.getBody().toString());
-//        } catch (UnirestException e) {
-//            log.error("数据发送异常：{}", e.getMessage());
-//        }
-//
-//    }
 
 }
