@@ -1,11 +1,11 @@
 package com.jamie.jmeter.listener;
 
+import com.google.gson.Gson;
 import com.jamie.jmeter.model.JMeterReportModel;
 import com.jamie.jmeter.model.TestCaseModel;
 import com.jamie.jmeter.pojo.ApiObject;
 import com.jamie.jmeter.pojo.Dashboard;
 import com.jamie.jmeter.pojo.TestCase;
-import com.jamie.jmeter.utils.GsonUtil;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
@@ -70,11 +70,20 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
 
         dashboard.setProjectEndTime(System.currentTimeMillis()); // 项目结束执行时间
         dashboard.setProjectDuration((dashboard.getProjectEndTime() - dashboard.getProjectStartTime()) / 1000); // 项目执行持续时间
-        jMeterReportModel.setDashboard(dashboard); // 设置Dashboard数据
-        jMeterReportModel.setTestCaseModels(testCaseModels); // 设置TestCaseModels数据
+        jMeterReportModel.setDashboard(dashboard); // 设置看板数据
+        jMeterReportModel.setTestCaseModels(testCaseModels); // 设置用例相关数据
 
-        // TODO 发送数据
-        send(jMeterReportModel);
+        // 完整数据提交给数据服务器
+        HttpResponse<JsonNode> response;
+        try {
+            response = Unirest.post(hostName.concat("/jmeter-results/save"))
+                    .header("Content-Type", "application/json")
+                    .body(new Gson().toJson(jMeterReportModel))
+                    .asJson();
+            log.info("数据发送成功：{}", response.getBody().toString());
+        } catch (UnirestException e) {
+            log.error("数据发送异常：{}", e.getMessage());
+        }
         log.info("测试数据: {}", jMeterReportModel);
 
     }
@@ -106,7 +115,7 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
         testCase.setCaseOwner(owner); // 用例作者
         testCase.setCaseName(sampleResult.getSampleLabel()); // 用例名称
         testCase.setCaseStepNum(sampleResult.getSubResults().length); // 每条用例的步骤数
-        testCase.setIsCasePass(sampleResult.isSuccessful()); // 用例是否执行通过 0:成功 1:失败
+        testCase.setResult(sampleResult.isSuccessful()); // 用例是否执行通过 0:成功 1:失败
         testCase.setCaseStartTime(sampleResult.getStartTime()); // 用例开始执行时间
         testCase.setCaseEndTime(sampleResult.getEndTime()); // 用例结束执行时间
         testCase.setCaseDuration(testCase.getCaseEndTime() - testCase.getCaseStartTime()); // 用例执行持续时间
@@ -114,7 +123,7 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
             count += 1;
         } // 用例执行成功数累加
 
-        testCaseModel.setTestCase(testCase);
+        testCaseModel.setCaseInfo(testCase);
 
         // API相关数据(用例的步骤)
         List<ApiObject> apiObjects = new ArrayList<>();
@@ -132,16 +141,16 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
             apiObject.setResponseBody(httpSampleResult.getResponseDataAsString()); // 响应体
             apiObject.setResponseCode(httpSampleResult.getResponseCode()); // 响应码
             // TODO 接口是否执行通过 0:成功 1:失败 是不是可以写的更优雅一些
-            apiObject.setIsApiPass(true);
+            apiObject.setResult(true);
             if (!(apiObject.getResponseCode().startsWith("2") || apiObject.getResponseCode().startsWith("3"))) {
-                apiObject.setIsApiPass(false);
+                apiObject.setResult(false);
             }
             // 断言信息
             AssertionResult[] assertionResults = httpSampleResult.getAssertionResults();
             StringBuilder stringBuilder = new StringBuilder();
             for (AssertionResult assertionResult : assertionResults) {
                 if (assertionResult.isFailure()) {
-                    apiObject.setIsApiPass(false);
+                    apiObject.setResult(false);
                     stringBuilder
                             .append(assertionResult.getName())
                             .append(": ")
@@ -158,26 +167,26 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
 
         }
 
-        testCaseModel.setApiObjects(apiObjects);
+        testCaseModel.setCaseSteps(apiObjects);
 
         testCaseModels.add(testCaseModel);
 
     }
 
     // 调用数据收集服务,储存数据到数据库
-    private void send(JMeterReportModel jMeterReportModel) {
-        // TODO 可考虑改用其他http框架,以及发送数据
-        HttpResponse<JsonNode> response;
-        try {
-            response = Unirest.post(hostName.concat("/jmeter-results/save"))
-                    .header("Content-Type", "application/json")
-                    .body(GsonUtil.objToJson(jMeterReportModel))
-                    .asJson();
-            log.info("数据发送成功：{}", response.getBody().toString());
-        } catch (UnirestException e) {
-            log.error("数据发送异常：{}", e.getMessage());
-        }
-
-    }
+//    private void send(JMeterReportModel jMeterReportModel) {
+//
+//        HttpResponse<JsonNode> response;
+//        try {
+//            response = Unirest.post(hostName.concat("/jmeter-results/save"))
+//                    .header("Content-Type", "application/json")
+//                    .body(GsonUtil.objToJson(jMeterReportModel))
+//                    .asJson();
+//            log.info("数据发送成功：{}", response.getBody().toString());
+//        } catch (UnirestException e) {
+//            log.error("数据发送异常：{}", e.getMessage());
+//        }
+//
+//    }
 
 }

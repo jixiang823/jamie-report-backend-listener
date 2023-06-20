@@ -9,7 +9,7 @@ import java.util.List;
 @Data
 public class TestCaseModel {
 
-    private TestCase testCase; // 测试用例信息
-    private List<ApiObject> apiObjects; // 测试用例内的接口信息
+    private TestCase caseInfo; // 测试用例信息
+    private List<ApiObject> caseSteps; // 测试用例内的接口信息
 
 }
