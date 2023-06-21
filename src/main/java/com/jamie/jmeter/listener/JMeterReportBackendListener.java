@@ -78,7 +78,7 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
         // 完整数据提交给数据服务器
         HttpResponse<JsonNode> response;
         try {
-            response = Unirest.post(hostName.concat("/jmeter-results/save"))
+            response = Unirest.post(hostName.concat("/jmeter/report/save"))
                     .header("Content-Type", "application/json")
                     .body(new Gson().toJson(jMeterReportModel))
                     .asJson();
@@ -144,7 +144,7 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
             apiObject.setResponseHeader(httpSampleResult.getResponseHeaders()); // 响应头
             apiObject.setResponseBody(httpSampleResult.getResponseDataAsString()); // 响应体
             apiObject.setResponseCode(httpSampleResult.getResponseCode()); // 响应码
-            // TODO 接口是否执行通过 0:成功 1:失败 是不是可以写的更优雅一些
+            // TODO 接口是否执行通过 1:成功 0:失败 是不是可以写的更优雅一些
             apiObject.setResult(true);
             if (!(apiObject.getResponseCode().startsWith("2") || apiObject.getResponseCode().startsWith("3"))) {
                 apiObject.setResult(false);
