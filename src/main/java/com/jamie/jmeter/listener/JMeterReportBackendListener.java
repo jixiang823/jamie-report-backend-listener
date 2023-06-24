@@ -63,7 +63,7 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
         dashboard.setEnv(context.getParameter("env")); // 执行环境
         dashboard.setProjectStartTime(System.currentTimeMillis()); // 执行开始时间
         String os = System.getProperty("os.name").toLowerCase();
-        dashboard.setType(os.contains("win") || os.contains("mac") ? 1 : 0); // 构建方式 手动/自动
+        dashboard.setBuildType(os.contains("win") || os.contains("mac") ? 1 : 0); // 构建方式 手动/自动
 
     }
 
@@ -119,7 +119,7 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
         testCase.setCaseOwner(owner); // 用例作者
         testCase.setCaseName(sampleResult.getSampleLabel()); // 用例名称
         testCase.setCaseStepNum(sampleResult.getSubResults().length); // 每条用例的步骤数
-        testCase.setResult(sampleResult.isSuccessful()); // 用例是否执行通过 0:成功 1:失败
+        testCase.setCaseResult(sampleResult.isSuccessful()); // 用例是否执行通过 1:成功 0:失败
         testCase.setCaseStartTime(sampleResult.getStartTime()); // 用例开始执行时间
         testCase.setCaseEndTime(sampleResult.getEndTime()); // 用例结束执行时间
         testCase.setCaseDuration(testCase.getCaseEndTime() - testCase.getCaseStartTime()); // 用例执行持续时间
@@ -144,17 +144,17 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
             apiObject.setResponseHeader(httpSampleResult.getResponseHeaders()); // 响应头
             apiObject.setResponseBody(httpSampleResult.getResponseDataAsString()); // 响应体
             apiObject.setResponseCode(httpSampleResult.getResponseCode()); // 响应码
-            // TODO 接口是否执行通过 1:成功 0:失败 是不是可以写的更优雅一些
-            apiObject.setResult(true);
+            // 接口是否执行通过 1:成功 0:失败
+            apiObject.setApiResult(true);
             if (!(apiObject.getResponseCode().startsWith("2") || apiObject.getResponseCode().startsWith("3"))) {
-                apiObject.setResult(false);
+                apiObject.setApiResult(false);
             }
             // 断言信息
             AssertionResult[] assertionResults = httpSampleResult.getAssertionResults();
             StringBuilder stringBuilder = new StringBuilder();
             for (AssertionResult assertionResult : assertionResults) {
                 if (assertionResult.isFailure()) {
-                    apiObject.setResult(false);
+                    apiObject.setApiResult(false);
                     stringBuilder
                             .append(assertionResult.getName())
                             .append(": ")
