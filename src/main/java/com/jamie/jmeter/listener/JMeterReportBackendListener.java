@@ -137,7 +137,8 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
             ApiObject apiObject = new ApiObject();
 
             apiObject.setApiName(httpSampleResult.getSampleLabel()); // API名称
-            apiObject.setRequestUrl(httpSampleResult.getUrlAsString()); // 请求URL
+            apiObject.setRequestHost(httpSampleResult.getURL().getHost()); // 请求域名
+            apiObject.setRequestPath(httpSampleResult.getURL().getPath()); // 请求路径
             apiObject.setRequestMethod(httpSampleResult.getHTTPMethod()); // 请求方法
             apiObject.setRequestHeader(httpSampleResult.getRequestHeaders()); // 请求头
             apiObject.setRequestBody(httpSampleResult.getSamplerData()); // 请求体

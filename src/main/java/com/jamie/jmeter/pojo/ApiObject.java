@@ -8,7 +8,8 @@ import lombok.Data;
 public class ApiObject {
 
     private String apiName; // API名称
-    private String requestUrl; // 请求url
+    private String requestHost; // 请求域名
+    private String requestPath; // 请求path
     private String requestMethod; // 请求方法
     private String requestHeader; // 请求头
     private String requestBody; // 请求体
