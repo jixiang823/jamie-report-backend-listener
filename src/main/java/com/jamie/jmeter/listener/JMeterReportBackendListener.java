@@ -101,7 +101,7 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
         dashboard.setCaseNum(testCaseModels.size()); // 执行的用例总数
         dashboard.setCasePassNum(count); // 执行成功的用例总数
         dashboard.setCaseFailNum(testCaseModels.size() - count); // 执行失败的用例总数
-        dashboard.setNewlyFailNum(testCaseModels.size() - count); // 新增失败的用例总数
+        dashboard.setNewlyFailNum(0); // 新增失败的用例总数(在jmeter-report-backend服务里做计算)
         dashboard.setKeepFailingNum(0); // 设置持续失败默认值(在jmeter-report-backend服务里做计算)
         dashboard.setCasePassRate(BigDecimal
                 .valueOf((double) dashboard.getCasePassNum() / dashboard.getCaseNum())
