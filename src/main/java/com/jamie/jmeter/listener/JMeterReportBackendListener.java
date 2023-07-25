@@ -120,6 +120,8 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
         testCase.setCaseName(sampleResult.getSampleLabel()); // 用例名称
         testCase.setCaseStepNum(sampleResult.getSubResults().length); // 每条用例的步骤数
         testCase.setCaseResult(sampleResult.isSuccessful()); // 用例是否执行通过 1:成功 0:失败
+        testCase.setNewlyFail(false); // 设置默认值
+        testCase.setKeepFailing(false); // 设置默认值
         testCase.setCaseStartTime(sampleResult.getStartTime()); // 用例开始执行时间
         testCase.setCaseEndTime(sampleResult.getEndTime()); // 用例结束执行时间
         testCase.setCaseDuration(testCase.getCaseEndTime() - testCase.getCaseStartTime()); // 用例执行持续时间
