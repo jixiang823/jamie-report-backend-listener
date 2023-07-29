@@ -18,8 +18,8 @@ public class ApiObject {
     private String responseCode; // 响应码
     private String assertMessage; // 接口断言信息
     private Boolean apiResult; // 接口是否执行成功 1:成功 0:失败
-    private Long apiStartTime; // 接口执行开始时间
-    private Long apiEndTime; // 接口执行结束时间
-    private Long apiDuration; // 接口执行持续时间
+    private Long startTime; // 接口执行开始时间
+    private Long endTime; // 接口执行结束时间
+    private Long duration; // 接口执行持续时间
 
 }

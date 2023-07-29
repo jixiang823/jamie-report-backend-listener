@@ -38,10 +38,10 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
     public Arguments getDefaultParameters() {
 
         Arguments arguments = new Arguments();
-        arguments.addArgument("owner","用例作者");
+        arguments.addArgument("owner","脚本作者");
         arguments.addArgument("host", "数据收集服务域名");
-        arguments.addArgument("name", "被测项目");
-        arguments.addArgument("env", "被测环境");
+        arguments.addArgument("feature", "业务线");
+        arguments.addArgument("env", "脚本执行环境");
         return arguments;
 
     }
@@ -52,16 +52,15 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
         jMeterReportModel = new JMeterReportModel();
         testCaseModels = new ArrayList<>();
         dashboard = new Dashboard();
-
         count = 0; // 计数(执行通过的用例数)
         owner = context.getParameter("owner"); // 用例作者
         hostName = context.getParameter("host"); // 数据收集服务的域名
         if (hostName.endsWith("/")) {
             hostName = hostName.substring(0, hostName.length() - 1);
         }
-        dashboard.setProjectName(context.getParameter("name")); // 项目名称
+        dashboard.setFeatureName(context.getParameter("name")); // 项目名称
         dashboard.setBuildEnv(context.getParameter("env")); // 执行环境
-        dashboard.setProjectStartTime(System.currentTimeMillis()); // 执行开始时间
+        dashboard.setStartTime(System.currentTimeMillis()); // 执行开始时间
         String os = System.getProperty("os.name").toLowerCase();
         dashboard.setBuildType(os.contains("win") || os.contains("mac") ? 1 : 0); // 构建方式 手动/自动
 
@@ -69,9 +68,8 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
 
     @Override
     public void teardownTest(BackendListenerContext context) {
-
-        dashboard.setProjectEndTime(System.currentTimeMillis()); // 项目结束执行时间
-        dashboard.setProjectDuration(dashboard.getProjectEndTime() - dashboard.getProjectStartTime()); // 项目执行持续时间(毫秒)
+        dashboard.setEndTime(System.currentTimeMillis()); // 项目结束执行时间
+        dashboard.setDuration(dashboard.getEndTime() - dashboard.getStartTime()); // 项目执行持续时间(毫秒)
         jMeterReportModel.setDashboard(dashboard); // 设置看板数据
         jMeterReportModel.setTestCaseModels(testCaseModels); // 设置用例相关数据
 
@@ -82,7 +80,7 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
                     .header("Content-Type", "application/json")
                     .body(new Gson().toJson(jMeterReportModel))
                     .asJson();
-            log.info("数据发送成功：{}", response.getBody().toString());
+            log.info("数据发送成功");
         } catch (UnirestException e) {
             log.error("数据发送异常：{}", e.getMessage());
         }
@@ -113,18 +111,17 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
 
         TestCaseModel testCaseModel = new TestCaseModel();
         TestCase testCase = new TestCase();
-
         // 用例相关数据
-        testCase.setModuleName(sampleResult.getThreadName().split(" ")[0]); // 模块名称
+        testCase.setStoryName(sampleResult.getThreadName().split(" ")[0].trim()); // 模块名称
         testCase.setCaseOwner(owner); // 用例作者
         testCase.setCaseName(sampleResult.getSampleLabel()); // 用例名称
         testCase.setCaseStepNum(sampleResult.getSubResults().length); // 每条用例的步骤数
         testCase.setCaseResult(sampleResult.isSuccessful()); // 用例是否执行通过 1:成功 0:失败
         testCase.setNewlyFail(false); // 设置默认值
         testCase.setKeepFailing(false); // 设置默认值
-        testCase.setCaseStartTime(sampleResult.getStartTime()); // 用例开始执行时间
-        testCase.setCaseEndTime(sampleResult.getEndTime()); // 用例结束执行时间
-        testCase.setCaseDuration(testCase.getCaseEndTime() - testCase.getCaseStartTime()); // 用例执行持续时间
+        testCase.setStartTime(sampleResult.getStartTime()); // 用例开始执行时间
+        testCase.setEndTime(sampleResult.getEndTime()); // 用例结束执行时间
+        testCase.setDuration(testCase.getEndTime() - testCase.getStartTime()); // 用例执行持续时间
         if (sampleResult.isSuccessful()) {
             count += 1;
         } // 用例执行成功数累加
@@ -166,9 +163,9 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
                 }
             }
             apiObject.setAssertMessage(stringBuilder.toString());
-            apiObject.setApiStartTime(httpSampleResult.getStartTime()); // API执行开始时间
-            apiObject.setApiEndTime(httpSampleResult.getEndTime()); // API执行结束时间
-            apiObject.setApiDuration(httpSampleResult.getTime()); // API执行持续时间
+            apiObject.setStartTime(httpSampleResult.getStartTime()); // API执行开始时间
+            apiObject.setEndTime(httpSampleResult.getEndTime()); // API执行结束时间
+            apiObject.setDuration(httpSampleResult.getTime()); // API执行持续时间
 
             apiObjects.add(apiObject);
 
