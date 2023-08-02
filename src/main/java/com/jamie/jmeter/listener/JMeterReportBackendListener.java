@@ -58,7 +58,7 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
         if (hostName.endsWith("/")) {
             hostName = hostName.substring(0, hostName.length() - 1);
         }
-        dashboard.setFeatureName(context.getParameter("name")); // 项目名称
+        dashboard.setFeatureName(context.getParameter("feature")); // 项目名称
         dashboard.setBuildEnv(context.getParameter("env")); // 执行环境
         dashboard.setStartTime(System.currentTimeMillis()); // 执行开始时间
         String os = System.getProperty("os.name").toLowerCase();
