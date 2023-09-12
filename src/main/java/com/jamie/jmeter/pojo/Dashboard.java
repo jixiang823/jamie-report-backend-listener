@@ -10,7 +10,6 @@ public class Dashboard {
 
     private String featureName; // 业务线名称
     private String buildEnv; // 用例执行环境
-    private Integer buildType; // 用例执行方式 0:自动 1:手动
     private Integer caseNum; // 执行的用例总数
     private Integer casePassNum; // 执行成功的用例总数
     private Integer caseFailNum; // 执行失败的用例总数
