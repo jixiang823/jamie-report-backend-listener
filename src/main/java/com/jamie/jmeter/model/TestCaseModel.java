@@ -1,7 +1,7 @@
 package com.jamie.jmeter.model;
 
-import com.jamie.jmeter.pojo.ApiObject;
-import com.jamie.jmeter.pojo.TestCase;
+import com.jamie.jmeter.pojo.ApiInfo;
+import com.jamie.jmeter.pojo.TestCaseInfo;
 import lombok.Data;
 
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.List;
 @Data
 public class TestCaseModel {
 
-    private TestCase caseInfo; // 测试用例信息
-    private List<ApiObject> caseSteps; // 测试用例内的接口信息
+    private TestCaseInfo caseInfo; // 测试用例信息
+    private List<ApiInfo> caseSteps; // 测试用例内的接口信息
 
 }

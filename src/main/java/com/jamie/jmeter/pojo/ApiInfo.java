@@ -5,7 +5,7 @@ import lombok.Data;
 
 // 详情页
 @Data
-public class ApiObject {
+public class ApiInfo {
 
     private String apiName; // API名称
     private String requestHost; // 请求域名

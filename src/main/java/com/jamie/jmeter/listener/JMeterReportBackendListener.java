@@ -3,9 +3,9 @@ package com.jamie.jmeter.listener;
 import com.google.gson.Gson;
 import com.jamie.jmeter.model.JMeterReportModel;
 import com.jamie.jmeter.model.TestCaseModel;
-import com.jamie.jmeter.pojo.ApiObject;
-import com.jamie.jmeter.pojo.Dashboard;
-import com.jamie.jmeter.pojo.TestCase;
+import com.jamie.jmeter.pojo.ApiInfo;
+import com.jamie.jmeter.pojo.TestSummary;
+import com.jamie.jmeter.pojo.TestCaseInfo;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
@@ -28,10 +28,10 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
 
     private static String owner; // 用例作者
     private static String hostName; // 数据存储服务的域名
-    private JMeterReportModel jMeterReportModel; // 最终提交数据(看板+测试用例)
-    private List<TestCaseModel> testCaseModels; // 测试用例数据
-    private Dashboard dashboard; // 看板数据
-    private Integer count; // 执行成功的用例计数
+    private JMeterReportModel jMeterReportModel; // 入库的测试数据
+    private List<TestCaseModel> testCaseModels; // 用例相关数据
+    private TestSummary testSummary; // 概要
+    private Integer count; // 计数 执行成功的用例数
 
 
     // 后端监听器相关参数
@@ -51,30 +51,30 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
 
         jMeterReportModel = new JMeterReportModel();
         testCaseModels = new ArrayList<>();
-        dashboard = new Dashboard();
+        testSummary = new TestSummary();
         count = 0; // 计数(执行通过的用例数)
         owner = context.getParameter("owner"); // 用例作者
         hostName = context.getParameter("host"); // 数据收集服务的域名
         if (hostName.endsWith("/")) {
             hostName = hostName.substring(0, hostName.length() - 1);
         }
-        dashboard.setFeatureName(context.getParameter("feature")); // 项目名称
-        dashboard.setBuildEnv(context.getParameter("env")); // 执行环境
-        dashboard.setStartTime(System.currentTimeMillis()); // 执行开始时间
+        testSummary.setFeatureName(context.getParameter("feature")); // 项目名称
+        testSummary.setBuildEnv(context.getParameter("env")); // 执行环境
+        testSummary.setStartTime(System.currentTimeMillis()); // 执行开始时间
 
     }
 
     @Override
     public void teardownTest(BackendListenerContext context) {
-        dashboard.setEndTime(System.currentTimeMillis()); // 项目结束执行时间
-        dashboard.setDuration(dashboard.getEndTime() - dashboard.getStartTime()); // 项目执行持续时间(毫秒)
-        jMeterReportModel.setDashboard(dashboard); // 设置看板数据
+        testSummary.setEndTime(System.currentTimeMillis()); // 项目结束执行时间
+        testSummary.setDuration(testSummary.getEndTime() - testSummary.getStartTime()); // 项目执行持续时间(毫秒)
+        jMeterReportModel.setTestSummary(testSummary); // 设置看板数据
         jMeterReportModel.setTestCaseModels(testCaseModels); // 设置用例相关数据
 
         // 完整数据提交给数据服务器
         HttpResponse<JsonNode> response;
         try {
-            response = Unirest.post(hostName.concat("/jmeter/report/save"))
+            response = Unirest.post(hostName.concat("/report/save"))
                     .header("Content-Type", "application/json")
                     .body(new Gson().toJson(jMeterReportModel))
                     .asJson();
@@ -93,14 +93,14 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
         for (SampleResult sampleResult : sampleResults) {
             setTestCaseModels(sampleResult);
         }
-        // 记录Dashboard数据
-        dashboard.setCaseNum(testCaseModels.size()); // 执行的用例总数
-        dashboard.setCasePassNum(count); // 执行成功的用例总数
-        dashboard.setCaseFailNum(testCaseModels.size() - count); // 执行失败的用例总数
-        dashboard.setNewlyFailNum(0); // 新增失败的用例总数(在jmeter-report-backend服务里做计算)
-        dashboard.setKeepFailingNum(0); // 设置持续失败默认值(在jmeter-report-backend服务里做计算)
-        dashboard.setCasePassRate(BigDecimal
-                .valueOf((double) dashboard.getCasePassNum() / dashboard.getCaseNum())
+        // 记录testSummary数据
+        testSummary.setCaseNum(testCaseModels.size()); // 执行的用例总数
+        testSummary.setCasePassNum(count); // 执行成功的用例总数
+        testSummary.setCaseFailNum(testCaseModels.size() - count); // 执行失败的用例总数
+        testSummary.setNewlyFailNum(0); // 新增失败的用例总数(在jmeter-report-backend服务里做计算)
+        testSummary.setKeepFailingNum(0); // 设置持续失败默认值(在jmeter-report-backend服务里做计算)
+        testSummary.setCasePassRate(BigDecimal
+                .valueOf((double) testSummary.getCasePassNum() / testSummary.getCaseNum())
                 .setScale(2, RoundingMode.HALF_UP)); // 用例执行成功率
     }
 
@@ -108,51 +108,51 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
     private void setTestCaseModels(SampleResult sampleResult) {
 
         TestCaseModel testCaseModel = new TestCaseModel();
-        TestCase testCase = new TestCase();
+        TestCaseInfo testCaseInfo = new TestCaseInfo();
         // 用例相关数据
-        testCase.setStoryName(sampleResult.getThreadName().split(" ")[0].trim()); // 模块名称
-        testCase.setCaseOwner(owner); // 用例作者
-        testCase.setCaseName(sampleResult.getSampleLabel()); // 用例名称
-        testCase.setCaseStepNum(sampleResult.getSubResults().length); // 每条用例的步骤数
-        testCase.setCaseResult(sampleResult.isSuccessful()); // 用例是否执行通过 1:成功 0:失败
-        testCase.setNewlyFail(false); // 设置默认值
-        testCase.setKeepFailing(false); // 设置默认值
-        testCase.setStartTime(sampleResult.getStartTime()); // 用例开始执行时间
-        testCase.setEndTime(sampleResult.getEndTime()); // 用例结束执行时间
-        testCase.setDuration(testCase.getEndTime() - testCase.getStartTime()); // 用例执行持续时间
+        testCaseInfo.setStoryName(sampleResult.getThreadName().split(" ")[0].trim()); // 模块名称
+        testCaseInfo.setCaseOwner(owner); // 用例作者
+        testCaseInfo.setCaseName(sampleResult.getSampleLabel()); // 用例名称
+        testCaseInfo.setCaseStepNum(sampleResult.getSubResults().length); // 每条用例的步骤数
+        testCaseInfo.setCaseResult(sampleResult.isSuccessful()); // 用例是否执行通过 1:成功 0:失败
+        testCaseInfo.setNewlyFail(false); // 设置默认值
+        testCaseInfo.setKeepFailing(false); // 设置默认值
+        testCaseInfo.setStartTime(sampleResult.getStartTime()); // 用例开始执行时间
+        testCaseInfo.setEndTime(sampleResult.getEndTime()); // 用例结束执行时间
+        testCaseInfo.setDuration(testCaseInfo.getEndTime() - testCaseInfo.getStartTime()); // 用例执行持续时间
         if (sampleResult.isSuccessful()) {
             count += 1;
         } // 用例执行成功数累加
 
-        testCaseModel.setCaseInfo(testCase);
+        testCaseModel.setCaseInfo(testCaseInfo);
 
         // API相关数据(用例的步骤)
-        List<ApiObject> apiObjects = new ArrayList<>();
+        List<ApiInfo> apiInfos = new ArrayList<>();
         for (SampleResult subResult : sampleResult.getSubResults()) {
 
             HTTPSampleResult httpSampleResult = (HTTPSampleResult) subResult;
-            ApiObject apiObject = new ApiObject();
+            ApiInfo apiInfo = new ApiInfo();
 
-            apiObject.setApiName(httpSampleResult.getSampleLabel()); // API名称
-            apiObject.setRequestHost(httpSampleResult.getURL().getHost()); // 请求域名
-            apiObject.setRequestPath(httpSampleResult.getURL().getPath()); // 请求路径
-            apiObject.setRequestMethod(httpSampleResult.getHTTPMethod()); // 请求方法
-            apiObject.setRequestHeader(httpSampleResult.getRequestHeaders()); // 请求头
-            apiObject.setRequestBody(httpSampleResult.getSamplerData()); // 请求体
-            apiObject.setResponseHeader(httpSampleResult.getResponseHeaders()); // 响应头
-            apiObject.setResponseBody(httpSampleResult.getResponseDataAsString()); // 响应体
-            apiObject.setResponseCode(httpSampleResult.getResponseCode()); // 响应码
+            apiInfo.setApiName(httpSampleResult.getSampleLabel()); // API名称
+            apiInfo.setRequestHost(httpSampleResult.getURL().getHost()); // 请求域名
+            apiInfo.setRequestPath(httpSampleResult.getURL().getPath()); // 请求路径
+            apiInfo.setRequestMethod(httpSampleResult.getHTTPMethod()); // 请求方法
+            apiInfo.setRequestHeader(httpSampleResult.getRequestHeaders()); // 请求头
+            apiInfo.setRequestBody(httpSampleResult.getSamplerData()); // 请求体
+            apiInfo.setResponseHeader(httpSampleResult.getResponseHeaders()); // 响应头
+            apiInfo.setResponseBody(httpSampleResult.getResponseDataAsString()); // 响应体
+            apiInfo.setResponseCode(httpSampleResult.getResponseCode()); // 响应码
             // 接口是否执行通过 1:成功 0:失败
-            apiObject.setApiResult(true);
-            if (!(apiObject.getResponseCode().startsWith("2") || apiObject.getResponseCode().startsWith("3"))) {
-                apiObject.setApiResult(false);
+            apiInfo.setApiResult(true);
+            if (!(apiInfo.getResponseCode().startsWith("2") || apiInfo.getResponseCode().startsWith("3"))) {
+                apiInfo.setApiResult(false);
             }
             // 断言信息
             AssertionResult[] assertionResults = httpSampleResult.getAssertionResults();
             StringBuilder stringBuilder = new StringBuilder();
             for (AssertionResult assertionResult : assertionResults) {
                 if (assertionResult.isFailure()) {
-                    apiObject.setApiResult(false);
+                    apiInfo.setApiResult(false);
                     stringBuilder
                             .append(assertionResult.getName())
                             .append(": ")
@@ -160,16 +160,16 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
                             .append("\n");
                 }
             }
-            apiObject.setAssertMessage(stringBuilder.toString());
-            apiObject.setStartTime(httpSampleResult.getStartTime()); // API执行开始时间
-            apiObject.setEndTime(httpSampleResult.getEndTime()); // API执行结束时间
-            apiObject.setDuration(httpSampleResult.getTime()); // API执行持续时间
+            apiInfo.setAssertMessage(stringBuilder.toString());
+            apiInfo.setStartTime(httpSampleResult.getStartTime()); // API执行开始时间
+            apiInfo.setEndTime(httpSampleResult.getEndTime()); // API执行结束时间
+            apiInfo.setDuration(httpSampleResult.getTime()); // API执行持续时间
 
-            apiObjects.add(apiObject);
+            apiInfos.add(apiInfo);
 
         }
 
-        testCaseModel.setCaseSteps(apiObjects);
+        testCaseModel.setCaseSteps(apiInfos);
 
         testCaseModels.add(testCaseModel);
 

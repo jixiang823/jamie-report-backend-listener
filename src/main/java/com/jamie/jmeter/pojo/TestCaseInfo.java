@@ -4,7 +4,7 @@ import lombok.Data;
 
 // 列表页
 @Data
-public class TestCase {
+public class TestCaseInfo {
 
     private String storyName; // 业务名称
     private String caseOwner; // 用例作者

@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 
 // 看板
 @Data
-public class Dashboard {
+public class TestSummary {
 
     private String featureName; // 业务线名称
     private String buildEnv; // 用例执行环境
