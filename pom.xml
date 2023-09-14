@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.example</groupId>
-    <artifactId>jmeter-report-backend-listener</artifactId>
+    <artifactId>jamie-report-backend-listener</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -84,7 +84,7 @@
                 </executions>
             </plugin>
         </plugins>
-        <finalName>jmeter-report-backend-listener</finalName>
+        <finalName>jamie-report-backend-listener</finalName>
     </build>
 
 

@@ -1,7 +1,7 @@
 package com.jamie.jmeter.listener;
 
 import com.google.gson.Gson;
-import com.jamie.jmeter.model.JMeterReportModel;
+import com.jamie.jmeter.model.ReportModel;
 import com.jamie.jmeter.model.TestCaseModel;
 import com.jamie.jmeter.pojo.ApiInfo;
 import com.jamie.jmeter.pojo.TestSummary;
@@ -24,11 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public class JMeterReportBackendListener extends AbstractBackendListenerClient {
+public class JamieReportBackendListener extends AbstractBackendListenerClient {
 
     private static String owner; // 用例作者
     private static String hostName; // 数据存储服务的域名
-    private JMeterReportModel jMeterReportModel; // 入库的测试数据
+    private ReportModel reportModel; // 入库的测试数据
     private List<TestCaseModel> testCaseModels; // 用例相关数据
     private TestSummary testSummary; // 概要
     private Integer count; // 计数 执行成功的用例数
@@ -49,7 +49,7 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
     @Override
     public void setupTest(BackendListenerContext context) {
 
-        jMeterReportModel = new JMeterReportModel();
+        reportModel = new ReportModel();
         testCaseModels = new ArrayList<>();
         testSummary = new TestSummary();
         count = 0; // 计数(执行通过的用例数)
@@ -68,21 +68,21 @@ public class JMeterReportBackendListener extends AbstractBackendListenerClient {
     public void teardownTest(BackendListenerContext context) {
         testSummary.setEndTime(System.currentTimeMillis()); // 项目结束执行时间
         testSummary.setDuration(testSummary.getEndTime() - testSummary.getStartTime()); // 项目执行持续时间(毫秒)
-        jMeterReportModel.setTestSummary(testSummary); // 设置看板数据
-        jMeterReportModel.setTestCaseModels(testCaseModels); // 设置用例相关数据
+        reportModel.setTestSummary(testSummary); // 设置看板数据
+        reportModel.setTestCaseModels(testCaseModels); // 设置用例相关数据
 
         // 完整数据提交给数据服务器
         HttpResponse<JsonNode> response;
         try {
             response = Unirest.post(hostName.concat("/report/save"))
                     .header("Content-Type", "application/json")
-                    .body(new Gson().toJson(jMeterReportModel))
+                    .body(new Gson().toJson(reportModel))
                     .asJson();
             log.info("数据发送成功");
         } catch (UnirestException e) {
             log.error("数据发送异常：{}", e.getMessage());
         }
-        log.info("测试数据: {}", jMeterReportModel);
+        log.info("测试数据: {}", reportModel);
 
     }
 
