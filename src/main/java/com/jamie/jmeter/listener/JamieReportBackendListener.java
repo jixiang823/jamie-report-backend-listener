@@ -38,10 +38,10 @@ public class JamieReportBackendListener extends AbstractBackendListenerClient {
     public Arguments getDefaultParameters() {
 
         Arguments arguments = new Arguments();
-        arguments.addArgument("owner","脚本作者");
-        arguments.addArgument("host", "数据收集服务域名");
-        arguments.addArgument("feature", "业务线");
-        arguments.addArgument("env", "脚本执行环境");
+        arguments.addArgument("owner","填写你的名字");
+        arguments.addArgument("host", "http://localhost:9123");
+        arguments.addArgument("feature", "填写业务线名称");
+        arguments.addArgument("env", "填写脚本执行环境");
         return arguments;
 
     }
