@@ -24,6 +24,6 @@
 ![image 2.png](src%2Fmain%2Fresources%2Fimage%202.png)
 `.jmx`脚本执行完毕后, 会调用`9123`端口的服务, 解析测试结果并入库.
 
-### 测试报告
+###  查看测试报告
 浏览器打开 `http://localhost:30080` 可查看测试报告.
 ![image 3.png](src%2Fmain%2Fresources%2Fimage%203.png)
