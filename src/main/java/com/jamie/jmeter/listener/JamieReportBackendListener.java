@@ -1,8 +1,8 @@
 package com.jamie.jmeter.listener;
 
 import com.google.gson.Gson;
-import com.jamie.jmeter.model.ReportModel;
-import com.jamie.jmeter.model.TestCaseModel;
+import com.jamie.jmeter.dto.ReportDTO;
+import com.jamie.jmeter.dto.TestCaseDTO;
 import com.jamie.jmeter.pojo.ApiInfo;
 import com.jamie.jmeter.pojo.TestSummary;
 import com.jamie.jmeter.pojo.TestCaseInfo;
@@ -28,8 +28,8 @@ public class JamieReportBackendListener extends AbstractBackendListenerClient {
 
     private static String owner; // 用例作者
     private static String hostName; // 数据存储服务的域名
-    private ReportModel reportModel; // 入库的测试数据
-    private List<TestCaseModel> testCaseModels; // 用例相关数据
+    private ReportDTO reportDto; // 入库的测试数据
+    private List<TestCaseDTO> testCaseDTOS; // 用例相关数据
     private TestSummary testSummary; // 概要
     private Integer count; // 计数 执行成功的用例数
 
@@ -38,7 +38,7 @@ public class JamieReportBackendListener extends AbstractBackendListenerClient {
     public Arguments getDefaultParameters() {
 
         Arguments arguments = new Arguments();
-        arguments.addArgument("owner","填写你的名字");
+        arguments.addArgument("owner","填写脚本的作者");
         arguments.addArgument("host", "http://localhost:9123");
         arguments.addArgument("feature", "填写业务线名称");
         arguments.addArgument("env", "填写脚本执行环境");
@@ -49,8 +49,8 @@ public class JamieReportBackendListener extends AbstractBackendListenerClient {
     @Override
     public void setupTest(BackendListenerContext context) {
 
-        reportModel = new ReportModel();
-        testCaseModels = new ArrayList<>();
+        reportDto = new ReportDTO();
+        testCaseDTOS = new ArrayList<>();
         testSummary = new TestSummary();
         count = 0; // 计数(执行通过的用例数)
         owner = context.getParameter("owner"); // 用例作者
@@ -68,21 +68,21 @@ public class JamieReportBackendListener extends AbstractBackendListenerClient {
     public void teardownTest(BackendListenerContext context) {
         testSummary.setEndTime(System.currentTimeMillis()); // 项目结束执行时间
         testSummary.setDuration(testSummary.getEndTime() - testSummary.getStartTime()); // 项目执行持续时间(毫秒)
-        reportModel.setTestSummary(testSummary); // 设置看板数据
-        reportModel.setTestCaseModels(testCaseModels); // 设置用例相关数据
+        reportDto.setTestSummary(testSummary); // 设置看板数据
+        reportDto.setTestCaseDTOS(testCaseDTOS); // 设置用例相关数据
 
         // 完整数据提交给数据服务器
         HttpResponse<JsonNode> response;
         try {
             response = Unirest.post(hostName.concat("/report/save"))
                     .header("Content-Type", "application/json")
-                    .body(new Gson().toJson(reportModel))
+                    .body(new Gson().toJson(reportDto))
                     .asJson();
             log.info("数据发送成功");
         } catch (UnirestException e) {
             log.error("数据发送异常：{}", e.getMessage());
         }
-        log.info("测试数据: {}", reportModel);
+        log.info("测试数据: {}", reportDto);
 
     }
 
@@ -94,9 +94,9 @@ public class JamieReportBackendListener extends AbstractBackendListenerClient {
             setTestCaseModels(sampleResult);
         }
         // 记录testSummary数据
-        testSummary.setCaseNum(testCaseModels.size()); // 执行的用例总数
+        testSummary.setCaseNum(testCaseDTOS.size()); // 执行的用例总数
         testSummary.setCasePassNum(count); // 执行成功的用例总数
-        testSummary.setCaseFailNum(testCaseModels.size() - count); // 执行失败的用例总数
+        testSummary.setCaseFailNum(testCaseDTOS.size() - count); // 执行失败的用例总数
         testSummary.setNewlyFailNum(0); // 新增失败的用例总数(在jmeter-report-backend服务里做计算)
         testSummary.setKeepFailingNum(0); // 设置持续失败默认值(在jmeter-report-backend服务里做计算)
         testSummary.setCasePassRate(BigDecimal
@@ -107,7 +107,7 @@ public class JamieReportBackendListener extends AbstractBackendListenerClient {
     // 得到testCaseModel的数据
     private void setTestCaseModels(SampleResult sampleResult) {
 
-        TestCaseModel testCaseModel = new TestCaseModel();
+        TestCaseDTO testCaseDto = new TestCaseDTO();
         TestCaseInfo testCaseInfo = new TestCaseInfo();
         // 用例相关数据
         testCaseInfo.setStoryName(sampleResult.getThreadName().split(" ")[0].trim()); // 模块名称
@@ -124,7 +124,7 @@ public class JamieReportBackendListener extends AbstractBackendListenerClient {
             count += 1;
         } // 用例执行成功数累加
 
-        testCaseModel.setCaseInfo(testCaseInfo);
+        testCaseDto.setCaseInfo(testCaseInfo);
 
         // API相关数据(用例的步骤)
         List<ApiInfo> apiInfos = new ArrayList<>();
@@ -169,9 +169,9 @@ public class JamieReportBackendListener extends AbstractBackendListenerClient {
 
         }
 
-        testCaseModel.setCaseSteps(apiInfos);
+        testCaseDto.setCaseSteps(apiInfos);
 
-        testCaseModels.add(testCaseModel);
+        testCaseDTOS.add(testCaseDto);
 
     }
 
