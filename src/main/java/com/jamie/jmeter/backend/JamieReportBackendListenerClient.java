@@ -1,4 +1,4 @@
-package com.jamie.jmeter.listener;
+package com.jamie.jmeter.backend;
 
 import com.google.gson.Gson;
 import com.jamie.jmeter.dto.ReportDTO;
@@ -6,8 +6,6 @@ import com.jamie.jmeter.dto.TestCaseDTO;
 import com.jamie.jmeter.pojo.ApiInfo;
 import com.jamie.jmeter.pojo.TestSummary;
 import com.jamie.jmeter.pojo.TestCaseInfo;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import lombok.extern.slf4j.Slf4j;
@@ -24,10 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public class JamieReportBackendListener extends AbstractBackendListenerClient {
+public class JamieReportBackendListenerClient extends AbstractBackendListenerClient {
 
     private static String owner; // 用例作者
-    private static String hostName; // 数据存储服务的域名
     private ReportDTO reportDto; // 入库的测试数据
     private List<TestCaseDTO> testCaseDTOS; // 用例相关数据
     private TestSummary testSummary; // 概要
@@ -38,10 +35,9 @@ public class JamieReportBackendListener extends AbstractBackendListenerClient {
     public Arguments getDefaultParameters() {
 
         Arguments arguments = new Arguments();
-        arguments.addArgument("owner","填写脚本的作者");
-        arguments.addArgument("host", "http://localhost:9123");
+        arguments.addArgument("owner","填写脚本作者");
         arguments.addArgument("feature", "填写业务线名称");
-        arguments.addArgument("env", "填写脚本执行环境");
+        arguments.addArgument("env", "填写环境名称");
         return arguments;
 
     }
@@ -54,10 +50,6 @@ public class JamieReportBackendListener extends AbstractBackendListenerClient {
         testSummary = new TestSummary();
         count = 0; // 计数(执行通过的用例数)
         owner = context.getParameter("owner"); // 用例作者
-        hostName = context.getParameter("host"); // 数据收集服务的域名
-        if (hostName.endsWith("/")) {
-            hostName = hostName.substring(0, hostName.length() - 1);
-        }
         testSummary.setFeatureName(context.getParameter("feature")); // 项目名称
         testSummary.setBuildEnv(context.getParameter("env")); // 执行环境
         testSummary.setStartTime(System.currentTimeMillis()); // 执行开始时间
@@ -66,15 +58,15 @@ public class JamieReportBackendListener extends AbstractBackendListenerClient {
 
     @Override
     public void teardownTest(BackendListenerContext context) {
+
         testSummary.setEndTime(System.currentTimeMillis()); // 项目结束执行时间
         testSummary.setDuration(testSummary.getEndTime() - testSummary.getStartTime()); // 项目执行持续时间(毫秒)
-        reportDto.setTestSummary(testSummary); // 设置看板数据
+        reportDto.setTestSummary(testSummary); // 设置概述相关数据
         reportDto.setTestCaseDTOS(testCaseDTOS); // 设置用例相关数据
 
         // 完整数据提交给数据服务器
-        HttpResponse<JsonNode> response;
         try {
-            response = Unirest.post(hostName.concat("/report/save"))
+            Unirest.post("http://localhost:9123/report/save")
                     .header("Content-Type", "application/json")
                     .body(new Gson().toJson(reportDto))
                     .asJson();
